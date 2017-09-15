@@ -30,21 +30,21 @@ class TestNode(unittest.TestCase):
 
     def testString1(self):
         root = NumberNode(0)
-        parenDepth = 0;
+        parenDepth = 0
         root, parenDepth = processCommand(root, 0, "4+6")
         self.assertTrue(parenDepth == 0)
         self.assertTrue(root.evaluate() == 10)
 
     def testStringWithPrecedence(self):
         root = NumberNode(0)
-        parenDepth = 0;
+        parenDepth = 0
         root, parenDepth = processCommand(root, 0, "4+6x4")
         self.assertTrue(parenDepth == 0)
         self.assertTrue(root.evaluate() == 28)
 
     def testStringWithParens(self):
         root = NumberNode(0)
-        parenDepth = 0;
+        parenDepth = 0
         root, parenDepth = processCommand(root, parenDepth, "4 x (6 + 4)")
         self.assertTrue(parenDepth == 0)
         self.assertTrue(root.evaluate() == 40)
@@ -52,7 +52,7 @@ class TestNode(unittest.TestCase):
 
     def testStringWithParens2(self):
         root = NumberNode(0)
-        parenDepth = 0;
+        parenDepth = 0
         root, parenDepth = processCommand(root, parenDepth, "4 x (6")
         self.assertTrue(parenDepth == 1)
         self.assertTrue(root.describe() == '4x(6')
@@ -153,6 +153,3 @@ class TestNode(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
