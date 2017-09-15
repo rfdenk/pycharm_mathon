@@ -2,8 +2,8 @@
 __all__ = [
     'InvalidOperatorSequenceError',
     'NumberNode',
-    'AdditionOperatorNode' ,'SubtractionOperatorNode',
-    'MultiplicationOperatorNode' ,'DivisionOperatorNode',
+    'AdditionOperatorNode', 'SubtractionOperatorNode',
+    'MultiplicationOperatorNode', 'DivisionOperatorNode',
     'ModuloOperatorNode',
     'ExponentiationOperatorNode',
     'RightOperatorNode',
@@ -47,7 +47,7 @@ class MathNode:
         then this will return a misleading value."""
         return 0
 
-    def squawk(self ,depth=0):
+    def squawk(self, depth=0):
         """Print a tree-looking structure that described the tree"""
         print("")
 
@@ -60,13 +60,14 @@ class MathNode:
 
     def openParen(self, parendepth):
         """Mark the open parenthesis, and update the latest operator appropriately"""
-        if self.right: self. right =self.right.openParen(parendepth)
+        if self.right:
+            self.right = self.right.openParen(parendepth)
         return self
 
     def closeParen(self, parendepth):
         """Mark the close parenthesis, and update the operator at this depth appropriately"""
         if self.right:
-            self. right =self.right.closeParen(parendepth)
+            self.right = self.right.closeParen(parendepth)
         return self
 
     def clone(self):
@@ -75,17 +76,17 @@ class MathNode:
 
 class EmptyNode(MathNode):
     def __init__(self):
-        super(EmptyNode ,self).__init__()
+        super(EmptyNode, self).__init__()
 
-    def append(self ,node):
+    def append(self, node):
         return node
 
 
 class NumberNode(MathNode):
     """A NumberNode holds a numeric value."""
 
-    def __init__(self ,value):
-        super(NumberNode ,self).__init__()
+    def __init__(self, value):
+        super(NumberNode, self).__init__()
         self.value = value
         self.dp = False
         self.numdp = 0
@@ -102,16 +103,16 @@ class NumberNode(MathNode):
 
     def append(self, node):
         # print("append " + node.name + " to " + self.name)
-        if isinstance(node ,NumberNode):     # Allows character-by-character parsing. Kinda goofy, really.
+        if isinstance(node, NumberNode):     # Allows character-by-character parsing. Kinda goofy, really.
             if self.dp:
-                self.value += node.value / ( 10 **self.numdp)
+                self.value += node.value / (10 ** self.numdp)
                 self.numdp += 1
             else:
                 self.value *= 10
                 self.value += node.value
-            self. name = str(self.value)
+            self.name = str(self.value)
             return self
-        elif isinstance(node ,OperatorNode): # m, op --> op(m,_)
+        elif isinstance(node, OperatorNode):  # m, op --> op(m,_)
             # Insert the new node as this node's parent, and make this node the new node's
             # left child. Return the new node so that it becomes the number node's parent's
             # child.
@@ -142,9 +143,9 @@ class NumberNode(MathNode):
 
 class OperatorNode(MathNode):
     def __init__(self, name, precedence, parendepth):
-        super(OperatorNode ,self).__init__()
-        self. name = name
-        self. precedence = precedence + (10 * parendepth)
+        super(OperatorNode, self).__init__()
+        self.name = name
+        self.precedence = precedence + (10 * parendepth)
         self.parendepth = parendepth
         # This is a hacky way to handle 2 + -4.
         # Works okay, but would be better to handle in the parser.
@@ -159,16 +160,18 @@ class OperatorNode(MathNode):
     def getPrecedence(self):
         return self.precedence
 
-    def collapse(self ,parendepth ) ->MathNode:
+    def collapse(self, parendepth)->MathNode:
 
         if self.left is not None:
-            self.left = self.left.collapse \
-                (parendepth)  # should be an error; cannot add an operator without a left-node!
+            # should be an error; cannot add an operator without a left-node!
+            self.left = self.left.collapse(parendepth)
         if self.right is not None:
             self.right = self.right.collapse(parendepth)
 
-        if self.left is not None and isinstance(self.left ,NumberNode) and self.right != None and isinstance(self.right
-                                                                                                         ,NumberNode):
+        if self.left is not None\
+                and isinstance(self.left, NumberNode)\
+                and self.right is not None\
+                and isinstance(self.right, NumberNode):
             return NumberNode(self.evaluate())
         else:
             return self
@@ -178,7 +181,7 @@ class OperatorNode(MathNode):
 
     def append(self, node):
         # print("append " + node.name + "[" + str(node.getPrecedence()) + "] to " + self.name + "[" + str(self.getPrecedence()) + "]")
-        if isinstance(node ,NumberNode):
+        if isinstance(node, NumberNode):
             if self.right is None:
                 self.right = node  # op(n,_), m -> op(n,m)
                 return self
@@ -192,7 +195,7 @@ class OperatorNode(MathNode):
             else:
                 self.right = self.right.append(node)
                 return self
-        elif isinstance(node,OperatorNode) :
+        elif isinstance(node, OperatorNode):
             if self.right is None:
                 # we got two operators in a row!
                 if node.name == '-':
@@ -220,7 +223,6 @@ class OperatorNode(MathNode):
     def appendDecimalPoint(self):
         if self.right is None:
             self.right = NumberNode(0)
-
         self.right = self.right.appendDecimalPoint()
         return self
 
@@ -229,7 +231,7 @@ class OperatorNode(MathNode):
             (' ' * depth)
             + self.name
             + '[' + str(self.parendepth) + ']'
-            + ('-' if self.signOfSubsequent<0 else '')
+            + ('-' if self.signOfSubsequent < 0 else '')
         )
         if self.left is not None:
             self.left.squawk(depth+1)
@@ -253,23 +255,27 @@ class OperatorNode(MathNode):
 
     def describe(self):
         d = ""
-
-        if self.left is not None: d = d + self.left.describe()
+        if self.left is not None:
+            d = d + self.left.describe()
         d = d + self.name
-        if self.signOfSubsequent < 0: d = d + '-'
-        if self.right is not None: d = d + self.right.describe()
+        if self.signOfSubsequent < 0:
+            d = d + '-'
+        if self.right is not None:
+            d = d + self.right.describe()
         return d
 
-    def _finishCloning(self,k):
+    def _finishCloning(self, k):
         k. signOfSubsequent = self.signOfSubsequent
-        if self.left is not None: k.left = self.left.clone()
-        if self.right is not None: k.right = self.right.clone()
+        if self.left is not None:
+            k.left = self.left.clone()
+        if self.right is not None:
+            k.right = self.right.clone()
         return k
 
 
 class AdditionOperatorNode(OperatorNode):
     def __init__(self, parendepth):
-        super(AdditionOperatorNode,self).__init__("+",1, parendepth)
+        super(AdditionOperatorNode, self).__init__("+", 1, parendepth)
 
     def evaluate(self):
         v = 0
@@ -286,7 +292,7 @@ class AdditionOperatorNode(OperatorNode):
 
 class SubtractionOperatorNode(OperatorNode):
     def __init__(self, parendepth):
-        super(SubtractionOperatorNode,self).__init__("-",1, parendepth)
+        super(SubtractionOperatorNode, self).__init__("-", 1, parendepth)
 
     def evaluate(self):
         v = 0
@@ -303,7 +309,7 @@ class SubtractionOperatorNode(OperatorNode):
 
 class MultiplicationOperatorNode(OperatorNode):
     def __init__(self, parendepth):
-        super(MultiplicationOperatorNode,self).__init__("x",2, parendepth)
+        super(MultiplicationOperatorNode, self).__init__("x", 2, parendepth)
 
     def evaluate(self):
         v = 1
@@ -320,7 +326,7 @@ class MultiplicationOperatorNode(OperatorNode):
 
 class DivisionOperatorNode(OperatorNode):
     def __init__(self, parendepth):
-        super(DivisionOperatorNode,self).__init__("/",2, parendepth)
+        super(DivisionOperatorNode, self).__init__("/", 2, parendepth)
 
     def evaluate(self):
         v = 1
@@ -341,7 +347,7 @@ class DivisionOperatorNode(OperatorNode):
 
 class ModuloOperatorNode(OperatorNode):
     def __init__(self, parendepth):
-        super(ModuloOperatorNode,self).__init__("%",2, parendepth)
+        super(ModuloOperatorNode, self).__init__("%", 2, parendepth)
 
     def evaluate(self):
         v = 0
@@ -362,9 +368,9 @@ class ModuloOperatorNode(OperatorNode):
 
 class ExponentiationOperatorNode(OperatorNode):
     def __init__(self, parendepth):
-        super(ExponentiationOperatorNode,self).__init__("^",3, parendepth)
+        super(ExponentiationOperatorNode, self).__init__("^", 3, parendepth)
 
-    def evaluate (self):
+    def evaluate(self):
         v = 0
         if self.left is not None:
             v = self.left.evaluate()
@@ -387,10 +393,11 @@ class RightOperatorNode(OperatorNode):
     # by the preceding operator, so we need _some_ kind of operator
     # here. The RightOperator just ignores its left child.
     def __init__(self, parendepth):
-        super(RightOperatorNode,self).__init__("R",-1,0)
+        super(RightOperatorNode, self).__init__("R", -1, 0)
 
     def evaluate(self):
-        if self.right: return self.right.evaluate()
+        if self.right:
+            return self.right.evaluate()
         return 0
 
     def clone(self):
@@ -398,23 +405,24 @@ class RightOperatorNode(OperatorNode):
         return self._finishCloning(k)
 
     def squawk2(self):
-
         if self.right is not None:
             return self.right.squawk2()
 
     def describe(self):
         d = ""
-        if self.right is not None: d = d + self.right.describe()
+        if self.right is not None:
+            d = d + self.right.describe()
         return d
 
 
 class ParenthesisNode(OperatorNode):
     def __init__(self, parendepth):
-        super(ParenthesisNode,self).__init__("(",4,parendepth)
+        super(ParenthesisNode, self).__init__("(", 4, parendepth)
         self.endParen = False
 
     def evaluate(self):
-        if self.left: return self.left.evaluate()
+        if self.left is not None:
+            return self.left.evaluate()
         return 0
 
     def closeParen(self, parendepth):
@@ -427,16 +435,15 @@ class ParenthesisNode(OperatorNode):
         return self
 
     def collapse(self, parendepth)->MathNode:
+        if self.left is not None:
+            self.left = self.left.collapse(parendepth)
 
-        if self.left is not None: self.left = self.left.collapse(parendepth)
-
-        if self.left is not None and isinstance(self.left,NumberNode) and self.endParen:
-            return NumberNode(self. evaluate())
+        if self.left is not None and isinstance(self.left, NumberNode) and self.endParen:
+            return NumberNode(self.evaluate())
         else:
             return self
 
-    def append(self,node):
-
+    def append(self, node):
         # print("append" + node.name + " to " + self.name)
         if self.endParen:
             node.left = self
@@ -455,12 +462,16 @@ class ParenthesisNode(OperatorNode):
 
     def squawk2(self):
         s = '( '
-        if self.left is not None: s += self.left.squawk2()
-        if self.endParen: s += ') '
+        if self.left is not None:
+            s += self.left.squawk2()
+        if self.endParen:
+            s += ') '
         return s
 
     def describe(self):
         d = '('
-        if self.left is not None: d = d + self.left.describe()
-        if self.endParen: d = d + ')'
+        if self.left is not None:
+            d = d + self.left.describe()
+        if self.endParen:
+            d = d + ')'
         return d

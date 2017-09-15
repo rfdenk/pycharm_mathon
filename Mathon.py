@@ -86,7 +86,7 @@ if __name__ == "__main__":
         try:
             runningValue = root.evaluate()
         except:
-            print("Error evaluating; try again");
+            print("Error evaluating; try again")
             root = NumberNode(0)
 
         # print(parenDepth)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         # Don't "overcollapse": if parenDepth > 0, don't evaluate the contents of those parentheses
         root = root.collapse(parenDepth)
         # Show the current "running" tree, to which the user may append operations.
-        pr(root.squawk2(),end='',flush=True)
+        pr(root.squawk2(), end='', flush=True)
 
         try:
             command = sys.stdin.readline()
@@ -105,7 +105,3 @@ if __name__ == "__main__":
             print()
             print("Bye!")
             quit()
-
-
-
-
