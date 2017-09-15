@@ -21,7 +21,7 @@ def processCommand(origRoot, origParenDepth, command):
                     # continue the formula
                     root = root.append(NumberNode(int(k)))
             elif k == '.':
-                root = root.append(DecimalPointNode())
+                root = root.appendDecimalPoint()
             elif k == '+':
                 root = root.append(AdditionOperatorNode(parenDepth))
             elif k == '-':

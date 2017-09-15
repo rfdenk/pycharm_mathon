@@ -1,7 +1,7 @@
 
 __all__ = [
     'InvalidOperatorSequenceError',
-    'NumberNode', 'DecimalPointNode',
+    'NumberNode',
     'AdditionOperatorNode' ,'SubtractionOperatorNode',
     'MultiplicationOperatorNode' ,'DivisionOperatorNode',
     'ModuloOperatorNode',
@@ -29,6 +29,12 @@ class MathNode:
     def getPrecedence(self):
         """Used to compare operator precedence"""
         return -1
+
+    def append(self, node):
+        return self
+
+    def appendDecimalPoint(self):
+        return self
 
     def collapse(self, parendepth):
         """Reduce a tree to the minimum amount of nodes required to
@@ -105,12 +111,6 @@ class NumberNode(MathNode):
                 self.value += node.value
             self. name = str(self.value)
             return self
-        elif isinstance(node ,DecimalPointNode):
-            if not self.dp:
-                self.dp = True
-                self.numdp = 1
-            self. name =str(self.value)
-            return self
         elif isinstance(node ,OperatorNode): # m, op --> op(m,_)
             # Insert the new node as this node's parent, and make this node the new node's
             # left child. Return the new node so that it becomes the number node's parent's
@@ -119,6 +119,13 @@ class NumberNode(MathNode):
             return node
         else:
             return self
+
+    def appendDecimalPoint(self):
+        if not self.dp:
+            self.dp = True
+            self.numdp = 1
+        self.name = str(self.value)
+        return self
 
     def squawk(self, depth=0):
         print((' ' * depth) + str(self.value))
@@ -131,22 +138,6 @@ class NumberNode(MathNode):
 
     def clone(self):
         return NumberNode(self.value)
-
-
-class DecimalPointNode(MathNode):
-    # The "DecimalPointNode" is absorbed by a NumberNode to insert
-    # a decimal point at the current location.
-    def __init__(self):
-        super(DecimalPointNode ,self).__init__()
-
-    def getPrecedence(self):
-        return 0
-
-    def evaluate(self):
-        return 0
-
-    def append(self, node):
-        pass
 
 
 class OperatorNode(MathNode):
@@ -186,7 +177,6 @@ class OperatorNode(MathNode):
         return 0  # subclass must override
 
     def append(self, node):
-
         # print("append " + node.name + "[" + str(node.getPrecedence()) + "] to " + self.name + "[" + str(self.getPrecedence()) + "]")
         if isinstance(node ,NumberNode):
             if self.right is None:
@@ -195,16 +185,6 @@ class OperatorNode(MathNode):
             else:
                 self.right = self.right.append(node)  # op(n,e), m -> op(n,(e,m))
                 return self
-
-        elif isinstance(node, DecimalPointNode):
-            if self.right is None:
-                self.right = NumberNode(0)
-                self.right = self.right.append(node)
-                return self
-            else:
-                self.right = self.right.append(node)  # op(n,e), m -> op(n,(e,m))
-                return self
-
         elif isinstance(node, ParenthesisNode):
             if self.right is None:
                 self.right = node
@@ -212,7 +192,6 @@ class OperatorNode(MathNode):
             else:
                 self.right = self.right.append(node)
                 return self
-
         elif isinstance(node,OperatorNode) :
             if self.right is None:
                 # we got two operators in a row!
@@ -226,7 +205,6 @@ class OperatorNode(MathNode):
                 else:
                     print("e1")
                     raise InvalidOperatorSequenceError()
-
             elif node.getPrecedence() > self.getPrecedence():
                 # evaluate this node before you evaluate me
                 self.right = self.right.append(node)
@@ -238,6 +216,13 @@ class OperatorNode(MathNode):
         else:
             print("e2")
             raise InvalidOperatorSequenceError()
+
+    def appendDecimalPoint(self):
+        if self.right is None:
+            self.right = NumberNode(0)
+
+        self.right = self.right.appendDecimalPoint()
+        return self
 
     def squawk(self, depth=0):
         print(
