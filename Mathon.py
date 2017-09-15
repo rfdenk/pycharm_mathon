@@ -42,7 +42,7 @@ def processCommand(origRoot, origParenDepth, command):
                     # restart the formula
                     # We need an operator to hold the parenthesized atom as a right child.
                     # We use the "Right" pseudo-operator, that only prints and evaluates its right side.
-                    parenDepth = 0
+                    parenDepth = 1
                     root = NumberNode(0)
                     root = root.append(RightOperatorNode(0))
                 root = root.append(ParenthesisNode(parenDepth))
