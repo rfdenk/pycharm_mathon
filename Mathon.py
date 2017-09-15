@@ -41,6 +41,8 @@ def processCommand(origRoot, origParenDepth, command):
                 if first and isinstance(root, NumberNode):
                     # restart the formula
                     # We need an operator to hold the parenthesized atom as a right child.
+                    # we could just use the AdditionOperatorNode, but then the printout would look
+                    # wrong: "4+3" ==> "0+4+3", or "(2x3)" ==> "0+(2x3)"
                     # We use the "Right" pseudo-operator, that only prints and evaluates its right side.
                     parenDepth = 1
                     root = NumberNode(0)
