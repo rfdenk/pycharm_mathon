@@ -1,7 +1,6 @@
 import sys
 
 from Node import *
-from Console import pr
 
 
 def processCommand(origRoot, origParenDepth, command):
