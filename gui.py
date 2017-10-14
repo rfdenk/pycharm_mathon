@@ -144,4 +144,7 @@ if __name__ == '__main__':
     tk = Tk()
     calculator = CalculatorApp(tk)
     tk.mainloop()
-    tk.destroy()
+    try:
+        tk.destroy()
+    except TclError as e:
+        pass
