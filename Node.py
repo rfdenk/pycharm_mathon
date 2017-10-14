@@ -32,9 +32,11 @@ class MathNode:
         return -1
 
     def append(self, node):
+        """Used to add a new node to a tree"""
         return self
 
     def append_decimal_point(self):
+        """Just a silly way to add a decimal point"""
         return self
 
     def collapse(self, parendepth):
@@ -74,6 +76,15 @@ class MathNode:
     def clone(self):
         return self
 
+    #
+    #
+    # THIS IS THE INTENDED INTERFACE METHOD!
+    # The process_command method takes a string, parses it,
+    # and appends the commands to the arithmetic tree.
+    # If things to well, it returns a new root node and paren_depth;
+    # if things go poorly, it returns the original root node and paren_depth.
+    #
+    #
     @staticmethod
     def process_command(original_root, original_paren_depth, command):
         # clone off the original info.
@@ -98,10 +109,11 @@ class MathNode:
                 elif k == '-':
                     root = root.append(SubtractionOperatorNode(paren_depth))
                 elif k == 'x':
-                    root = root.append(MultiplicationOperatorNode(paren_depth))  # preferred symbol for multiply
+                    # preferred symbol for multiply
+                    root = root.append(MultiplicationOperatorNode(paren_depth))
                 elif k == '*':
-                    root = root.append(
-                        MultiplicationOperatorNode(paren_depth))  # allowed alternative symbol for multiply
+                    # allowed alternative symbol for multiply
+                    root = root.append(MultiplicationOperatorNode(paren_depth))
                 elif k == '/':
                     root = root.append(DivisionOperatorNode(paren_depth))
                 elif k == '%':
@@ -115,7 +127,7 @@ class MathNode:
                         # We need an operator to hold the parenthesized atom as a right child.
                         # we could just use the AdditionOperatorNode, but then the printout would look
                         # wrong: "4+3" ==> "0+4+3", or "(2x3)" ==> "0+(2x3)"
-                        # We use the "Right" pseudo-operator, that only prints and evaluates its right side.
+                        # We use the "Right" pseudo-operator, that only prints and evaluates its right child.
                         paren_depth = 1
                         root = NumberNode(0)
                         root = root.append(RightOperatorNode(0))
@@ -127,6 +139,9 @@ class MathNode:
                     else:
                         print(") error")
                         raise InvalidOperatorSequenceError()
+                else:
+                    # we could raise an exception here, instead...
+                    return original_root, original_paren_depth
 
                 first = False
         except:
@@ -204,6 +219,8 @@ class NumberNode(MathNode):
 
 
 class OperatorNode(MathNode):
+    """This is the base class for all operators"""
+
     def __init__(self, name, precedence, parendepth):
         super(OperatorNode, self).__init__()
         self.name = name
