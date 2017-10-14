@@ -1,6 +1,7 @@
 
 __all__ = [
     'InvalidOperatorSequenceError',
+    'MathNode',
     'NumberNode',
     'AdditionOperatorNode', 'SubtractionOperatorNode',
     'MultiplicationOperatorNode', 'DivisionOperatorNode',
@@ -8,7 +9,6 @@ __all__ = [
     'ExponentiationOperatorNode',
     'RightOperatorNode',
     'ParenthesisNode',
-    'processCommand'
 ]
 
 __author__ = 'RobertD'
@@ -27,14 +27,14 @@ class MathNode:
         self.right = None
         self.name = "#"
 
-    def getPrecedence(self):
+    def get_precedence(self):
         """Used to compare operator precedence"""
         return -1
 
     def append(self, node):
         return self
 
-    def appendDecimalPoint(self):
+    def append_decimal_point(self):
         return self
 
     def collapse(self, parendepth):
@@ -59,20 +59,81 @@ class MathNode:
     def describe(self):
         return ""
 
-    def openParen(self, parendepth):
+    def append_open_paren(self, parendepth):
         """Mark the open parenthesis, and update the latest operator appropriately"""
         if self.right:
-            self.right = self.right.openParen(parendepth)
+            self.right = self.right.append_open_paren(parendepth)
         return self
 
-    def closeParen(self, parendepth):
+    def append_close_paren(self, parendepth):
         """Mark the close parenthesis, and update the operator at this depth appropriately"""
         if self.right:
-            self.right = self.right.closeParen(parendepth)
+            self.right = self.right.append_close_paren(parendepth)
         return self
 
     def clone(self):
         return self
+
+    @staticmethod
+    def process_command(original_root, original_paren_depth, command):
+        # clone off the original info.
+        # if there is an error, we'll return the original.
+        root = original_root.clone()
+        paren_depth = original_paren_depth
+
+        first = True
+        try:
+            for k in command:
+                if k in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'):
+                    if first and isinstance(root, NumberNode):
+                        # restart the formula
+                        root = NumberNode(int(k))
+                    else:
+                        # continue the formula
+                        root = root.append(NumberNode(int(k)))
+                elif k == '.':
+                    root = root.append_decimal_point()
+                elif k == '+':
+                    root = root.append(AdditionOperatorNode(paren_depth))
+                elif k == '-':
+                    root = root.append(SubtractionOperatorNode(paren_depth))
+                elif k == 'x':
+                    root = root.append(MultiplicationOperatorNode(paren_depth))  # preferred symbol for multiply
+                elif k == '*':
+                    root = root.append(
+                        MultiplicationOperatorNode(paren_depth))  # allowed alternative symbol for multiply
+                elif k == '/':
+                    root = root.append(DivisionOperatorNode(paren_depth))
+                elif k == '%':
+                    root = root.append(ModuloOperatorNode(paren_depth))
+                elif k == '^':
+                    root = root.append(ExponentiationOperatorNode(paren_depth))
+                elif k == '(':
+                    paren_depth += 1
+                    if first and isinstance(root, NumberNode):
+                        # restart the formula
+                        # We need an operator to hold the parenthesized atom as a right child.
+                        # we could just use the AdditionOperatorNode, but then the printout would look
+                        # wrong: "4+3" ==> "0+4+3", or "(2x3)" ==> "0+(2x3)"
+                        # We use the "Right" pseudo-operator, that only prints and evaluates its right side.
+                        paren_depth = 1
+                        root = NumberNode(0)
+                        root = root.append(RightOperatorNode(0))
+                    root = root.append(ParenthesisNode(paren_depth))
+                elif k == ')':
+                    if paren_depth > 0:
+                        root = root.append_close_paren(paren_depth)
+                        paren_depth -= 1
+                    else:
+                        print(") error")
+                        raise InvalidOperatorSequenceError()
+
+                first = False
+        except:
+            print("Error; try again")
+            return original_root, original_paren_depth
+
+        return root, paren_depth
 
 
 class EmptyNode(MathNode):
@@ -93,7 +154,7 @@ class NumberNode(MathNode):
         self.numdp = 0
         self.name = str(value)
 
-    def getPrecedence(self):
+    def get_precedence(self):
         # Technically, a number has the highest precedence of all nodes,
         # but we don't ever make use of a NumberNode's precedence.
 
@@ -122,7 +183,7 @@ class NumberNode(MathNode):
         else:
             return self
 
-    def appendDecimalPoint(self):
+    def append_decimal_point(self):
         if not self.dp:
             self.dp = True
             self.numdp = 1
@@ -153,12 +214,12 @@ class OperatorNode(MathNode):
         # If we do it in the parser, though, we'd need to handle 3 + -(2 x 5).
         self.signOfSubsequent = 1
 
-    def closeParen(self, parendepth):
+    def append_close_paren(self, parendepth):
         if self.right is not None:
-            self.right = self.right.closeParen(parendepth)
+            self.right = self.right.append_close_paren(parendepth)
         return self
 
-    def getPrecedence(self):
+    def get_precedence(self):
         return self.precedence
 
     def collapse(self, parendepth)->MathNode:
@@ -181,7 +242,9 @@ class OperatorNode(MathNode):
         return 0  # subclass must override
 
     def append(self, node):
-        # print("append " + node.name + "[" + str(node.getPrecedence()) + "] to " + self.name + "[" + str(self.getPrecedence()) + "]")
+        # print("append " 
+        #   + node.name + "[" + str(node.get_precedence()) + "] to " 
+        # + self.name + "[" + str(self.get_precedence()) + "]")
         if isinstance(node, NumberNode):
             if self.right is None:
                 self.right = node  # op(n,_), m -> op(n,m)
@@ -209,7 +272,7 @@ class OperatorNode(MathNode):
                 else:
                     print("e1")
                     raise InvalidOperatorSequenceError()
-            elif node.getPrecedence() > self.getPrecedence():
+            elif node.get_precedence() > self.get_precedence():
                 # evaluate this node before you evaluate me
                 self.right = self.right.append(node)
                 return self
@@ -221,10 +284,10 @@ class OperatorNode(MathNode):
             print("e2")
             raise InvalidOperatorSequenceError()
 
-    def appendDecimalPoint(self):
+    def append_decimal_point(self):
         if self.right is None:
             self.right = NumberNode(0)
-        self.right = self.right.appendDecimalPoint()
+        self.right = self.right.append_decimal_point()
         return self
 
     def squawk(self, depth=0):
@@ -265,7 +328,7 @@ class OperatorNode(MathNode):
             d = d + self.right.describe()
         return d
 
-    def _finishCloning(self, k):
+    def _finish_cloning(self, k):
         k. signOfSubsequent = self.signOfSubsequent
         if self.left is not None:
             k.left = self.left.clone()
@@ -288,7 +351,7 @@ class AdditionOperatorNode(OperatorNode):
 
     def clone(self):
         k = AdditionOperatorNode(self.parendepth)
-        return self._finishCloning(k)
+        return self._finish_cloning(k)
 
 
 class SubtractionOperatorNode(OperatorNode):
@@ -305,7 +368,7 @@ class SubtractionOperatorNode(OperatorNode):
 
     def clone(self):
         k = SubtractionOperatorNode(self.parendepth)
-        return self._finishCloning(k)
+        return self._finish_cloning(k)
 
 
 class MultiplicationOperatorNode(OperatorNode):
@@ -322,7 +385,7 @@ class MultiplicationOperatorNode(OperatorNode):
 
     def clone(self):
         k = MultiplicationOperatorNode(self.parendepth)
-        return self._finishCloning(k)
+        return self._finish_cloning(k)
 
 
 class DivisionOperatorNode(OperatorNode):
@@ -343,7 +406,7 @@ class DivisionOperatorNode(OperatorNode):
 
     def clone(self):
         k = DivisionOperatorNode(self.parendepth)
-        return self._finishCloning(k)
+        return self._finish_cloning(k)
 
 
 class ModuloOperatorNode(OperatorNode):
@@ -364,7 +427,7 @@ class ModuloOperatorNode(OperatorNode):
 
     def clone(self):
         k = ModuloOperatorNode(self.parendepth)
-        return self._finishCloning(k)
+        return self._finish_cloning(k)
 
 
 class ExponentiationOperatorNode(OperatorNode):
@@ -385,7 +448,7 @@ class ExponentiationOperatorNode(OperatorNode):
 
     def clone(self):
         k = ExponentiationOperatorNode(self.parendepth)
-        return self._finishCloning(k)
+        return self._finish_cloning(k)
 
 
 class RightOperatorNode(OperatorNode):
@@ -393,7 +456,7 @@ class RightOperatorNode(OperatorNode):
     # start an expression with a parenthesis. The parenthesis is held
     # by the preceding operator, so we need _some_ kind of operator
     # here. The RightOperator just ignores its left child.
-    def __init__(self, parendepth):
+    def __init__(self, paren_depth):
         super(RightOperatorNode, self).__init__("R", -1, 0)
 
     def evaluate(self):
@@ -403,7 +466,7 @@ class RightOperatorNode(OperatorNode):
 
     def clone(self):
         k = RightOperatorNode(self.parendepth)
-        return self._finishCloning(k)
+        return self._finish_cloning(k)
 
     def squawk2(self):
         if self.right is not None:
@@ -426,12 +489,12 @@ class ParenthesisNode(OperatorNode):
             return self.left.evaluate()
         return 0
 
-    def closeParen(self, parendepth):
-        # print("closeparen at " + str(parendepth) + "apply to "+ str(self.parendepth))
+    def append_close_paren(self, parendepth):
+        # print("append_close_paren at " + str(parendepth) + "apply to "+ str(self.parendepth))
         if self.parendepth == parendepth:
             self.endParen = True
         elif self.left:
-            self.left = self.left.closeParen(parendepth)
+            self.left = self.left.append_close_paren(parendepth)
 
         return self
 
@@ -459,7 +522,7 @@ class ParenthesisNode(OperatorNode):
     def clone(self):
         k = ParenthesisNode(self.parendepth)
         k.endParen = self.endParen
-        return self._finishCloning(k)
+        return self._finish_cloning(k)
 
     def squawk2(self):
         s = '( '
@@ -476,62 +539,3 @@ class ParenthesisNode(OperatorNode):
         if self.endParen:
             d = d + ')'
         return d
-
-def processCommand(origRoot, origParenDepth, command):
-    # clone off the original info.
-    # if there is an error, we'll return the original.
-    root = origRoot.clone()
-    parenDepth = origParenDepth
-
-    first = True
-    try:
-        for k in command:
-            if k in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'):
-                if first and isinstance(root, NumberNode):
-                    # restart the formula
-                    root = NumberNode(int(k))
-                else:
-                    # continue the formula
-                    root = root.append(NumberNode(int(k)))
-            elif k == '.':
-                root = root.appendDecimalPoint()
-            elif k == '+':
-                root = root.append(AdditionOperatorNode(parenDepth))
-            elif k == '-':
-                root = root.append(SubtractionOperatorNode(parenDepth))
-            elif k == 'x':
-                root = root.append(MultiplicationOperatorNode(parenDepth))  # preferred symbol for multiply
-            elif k == '*':
-                root = root.append(MultiplicationOperatorNode(parenDepth))  # allowed alternative symbol for multiply
-            elif k == '/':
-                root = root.append(DivisionOperatorNode(parenDepth))
-            elif k == '%':
-                root = root.append(ModuloOperatorNode(parenDepth))
-            elif k == '^':
-                root = root.append(ExponentiationOperatorNode(parenDepth))
-            elif k == '(':
-                parenDepth += 1
-                if first and isinstance(root, NumberNode):
-                    # restart the formula
-                    # We need an operator to hold the parenthesized atom as a right child.
-                    # we could just use the AdditionOperatorNode, but then the printout would look
-                    # wrong: "4+3" ==> "0+4+3", or "(2x3)" ==> "0+(2x3)"
-                    # We use the "Right" pseudo-operator, that only prints and evaluates its right side.
-                    parenDepth = 1
-                    root = NumberNode(0)
-                    root = root.append(RightOperatorNode(0))
-                root = root.append(ParenthesisNode(parenDepth))
-            elif k == ')':
-                if parenDepth > 0:
-                    root = root.closeParen(parenDepth)
-                    parenDepth -= 1
-                else:
-                    print(") error")
-                    raise InvalidOperatorSequenceError()
-
-            first = False
-    except:
-        print("Error; try again")
-        return origRoot, origParenDepth
-
-    return root, parenDepth

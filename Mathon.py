@@ -3,8 +3,6 @@ import sys
 from Node import *
 
 
-
-
 if __name__ == "__main__":
 
     root = NumberNode(0)
@@ -22,7 +20,7 @@ if __name__ == "__main__":
     parenDepth = 0
 
     while 1:
-        root, parenDepth = processCommand(root, parenDepth, command)
+        root, parenDepth = MathNode.process_command(root, parenDepth, command)
 
         try:
             runningValue = root.evaluate()
